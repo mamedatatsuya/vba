@@ -1,0 +1,95 @@
+家計簿ブック作成
+Sub GenerateBook()
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim year As Integer
+    Dim month As Integer
+    
+    year = Application.InputBox(prompt:="作成したい年を入力してください。", Type:=1)
+    If year = False Then Exit Sub
+    
+    Set wb = Workbooks.Add
+    
+    For month = 12 To 1 Step -1
+        Set ws = wb.Sheets.Add
+        ws.Name = month & "月分"
+        Call SetTableFormat(ws, year, month)
+    Next
+    Set ws = wb.Sheets.Add
+    ws.Name = "請求分(" & year & "年)"
+    ws.Cells(2, 2).Value = "月"
+    ws.Cells(2, 3).Value = "金額"
+    ws.Cells(2, 4).Value = "請求状態"
+    ws.Columns(2).ColumnWidth = 7
+    ws.Columns(3).ColumnWidth = 14
+    ws.Columns(4).ColumnWidth = 11
+    Call ws.ListObjects.Add(xlSrcRange, Range("B2").CurrentRegion, , xlYes)
+    ws.Range("B2").ListObject.Name = "請求分(" & year & "年)"
+    ws.Range("B2").ListObject.TableStyle = "TableStyleLight8"
+    With ws.Range(Cells(3, 4), Cells(14, 4)).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="請求済み, 未請求"
+    End With
+    
+    Application.DisplayAlerts = False
+    wb.Sheets(14).Delete
+    Application.DisplayAlerts = True
+    
+    Call wb.SaveAs("家計簿" & year & ".xlsx")
+End Sub
+
+テーブルの初期化
+Sub SetTableFormat(ws As Worksheet, year As Integer, month As Integer)
+    Const firstRow As Integer = 3
+    Const lastRow As Long = 1048576
+    
+    ws.Cells(2, 2).Value = "日付"
+    ws.Cells(2, 3).Value = "金額"
+    ws.Cells(2, 4).Value = "分類"
+    ws.Cells(2, 5).Value = "支払方法"
+    ws.Cells(2, 6).Value = "決済状況"
+    ws.Cells(2, 7).Value = "請求"
+    ws.Cells(2, 8).Value = "損益"
+    ws.Cells(2, 9).Value = "備考"
+    ws.Columns(2).ColumnWidth = 7
+    ws.Columns(3).ColumnWidth = 14
+    ws.Columns(4).ColumnWidth = 7
+    ws.Columns(5).ColumnWidth = 14
+    ws.Columns(6).ColumnWidth = 11
+    ws.Columns(7).ColumnWidth = 7
+    ws.Columns(8).ColumnWidth = 7
+    ws.Columns(9).ColumnWidth = 50
+    
+    Call ws.ListObjects.Add(xlSrcRange, Range("B2").CurrentRegion, , xlYes)
+    ws.Range("B2").ListObject.Name = "収支" & month & "月分"
+    ws.Range("B2").ListObject.TableStyle = "TableStyleLight8"
+    
+    With ws.Range(Cells(firstRow, 2), Cells(lastRow, 2)).Validation
+        .Delete
+        .Add Type:=xlValidateWholeNumber, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="1", Formula2:="31"
+    End With
+    Range(Cells(firstRow, 3), Cells(lastRow, 3)).NumberFormatLocal = "_ \* #,##0_ ;_ \* -#,##0_ ;_ \* ""-""_ ;_ @_ "
+    With ws.Range(Cells(firstRow, 4), Cells(lastRow, 4)).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="食品, 衣類, 日用品, 交通費, 医療費, 外食, その他"
+    End With
+    With ws.Range(Cells(firstRow, 5), Cells(lastRow, 5)).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="WAON, Suica, イオンデビット, 現金, Visaデビット, 銀行引き落とし"
+    End With
+    With ws.Range(Cells(firstRow, 6), Cells(lastRow, 6)).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="決済済み, 未決済"
+    End With
+    With ws.Range(Cells(firstRow, 7), Cells(lastRow, 7)).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="○, ×"
+    End With
+    With ws.Range(Cells(firstRow, 8), Cells(lastRow, 8)).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="支出, 収入"
+    End With
+    
+    Cells(1, 1).Value = year & "年" & month & "月分"
+    
+End Sub

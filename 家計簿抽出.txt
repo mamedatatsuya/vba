@@ -1,0 +1,84 @@
+Sub 請求分追加()
+    Dim original As Worksheet
+    Dim addTo As ListObject
+    Dim originalList As ListObject
+    Dim year As Integer
+    Dim month As Integer
+    Dim total As Long
+    Dim N As Integer
+    
+    Debug.Print vbCrLf & "請求分追加()~開始~"
+    
+    On Error GoTo ErrLabel      '変数設定
+    month = getMonth()
+    year = getYear()
+    Set original = ActiveSheet
+    Set addTo = ActiveWorkbook.Worksheets("請求分(" & year & "年)").ListObjects("請求分(" & year & "年)")
+    Set originalList = getOriginalList(original, month)
+    
+    With originalList      '元テーブルから抽象
+        .ShowTotals = True
+        .ListColumns("金額").TotalsCalculation = xlTotalsCalculationSum
+        .Range.AutoFilter Field:=6, Criteria1:="○"
+        total = .TotalsRowRange(2).Value
+        .Range.AutoFilter Field:=6
+    End With
+    
+    With addTo
+        N = .ListColumns(1).Range.Count
+        .ListColumns(1).Range(N) = month
+        .ListColumns(2).Range(N) = total
+        .ListColumns(3).Range(N) = "未請求"
+        .ListRows.Add
+    End With
+    
+    Debug.Print "請求分追加()~正常終了~"
+    Exit Sub
+    
+ErrLabel:
+    Debug.Print Spc(7); Err.Source; "のエラー!"; Err.Description; Erl
+    Debug.Print "請求分追加()~エラー終了~"
+    'List.DataBodyRange.Clear
+    'List.ShowAutoFilter = True
+    
+End Sub
+
+Function getMonth() As Integer
+    Dim re
+    Set re = CreateObject("VBScript.RegExp")
+    With re
+        .Global = True
+        .IgnoreCase = True
+        .Pattern = "\d+月分"
+    End With
+    If Not re.test(ActiveSheet.Name) Then
+        Call Err.Raise(1100, "getMonth()", "月別収支シートではありませんでした。")
+    End If
+    getMonth = CInt(Left(ActiveSheet.Name, InStr(ActiveSheet.Name, "月") - 1))
+    Debug.Print Spc(7); "getMonth()~正常返答~："; getMonth
+End Function
+
+Function getOriginalList(ws As Worksheet, month As Integer) As ListObject
+    On Error GoTo ErrLabel
+    Set getOriginalList = ws.ListObjects("収支" & month & "月分")
+    Debug.Print Spc(7); "getRPList()~正常返答~"
+    Exit Function
+    
+ErrLabel:
+
+End Function
+
+Function getYear() As Integer
+    Dim re
+    Set re = CreateObject("VBScript.RegExp")
+    With re
+        .Global = True
+        .IgnoreCase = True
+        .Pattern = "家計簿\d+."
+    End With
+    If Not re.test(ActiveWorkbook.Name) Then
+        Call Err.Raise(1101, "getYear()", "家計簿ブックではありませんでした。")
+    End If
+    getYear = CInt(Mid(ActiveWorkbook.Name, 4, 4))
+    Debug.Print Spc(7); "getYear()~正常返答~："; getYear
+End Function
